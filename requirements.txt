@@ -1,4 +1,4 @@
-torch==1.7.1
+https://download.pytorch.org/whl/cpu/torch-1.7.1%2Bcpu-cp36-cp36m-linux_x86_64.whl
 librosa==0.8.0
 pytest==6.2.1
 numpy==1.19.4
@@ -6,3 +6,4 @@ Flask==1.1.2
 scipy==1.5.4
 PyYAML==5.3.1
 scikit_learn==0.24.0
+gunicorn=20.0.4
