@@ -30,7 +30,7 @@ class Classifier:
         """Get preprocessed Tensor"""
         logger.debug("Audio shape: %s.", wav.shape)
         labels = np.array([None], dtype=np.float32)
-        dataset = CatDogDataset([wav], labels)
+        dataset = CatDogDataset([wav], labels, stable=True)
         data, _ = dataset[0]
         logger.debug("Spec shape: %s.", data.shape)
         data = data[np.newaxis, :, :, :]

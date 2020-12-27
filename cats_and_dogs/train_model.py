@@ -83,11 +83,12 @@ def get_mel(wav):
 class CatDogDataset(Dataset):
     """Face Landmarks dataset."""
 
-    def __init__(self, files, labels, transform=None):
+    def __init__(self, files, labels, transform=None, stable=False):
         """Init Dataset"""
         self.files = files
         self.labels = labels
         self.transform = transform
+        self.stable = stable
         logger.debug("CatDogDataset initialized with %s files", len(self.files))
 
     def __len__(self):
@@ -100,12 +101,18 @@ class CatDogDataset(Dataset):
         label = self.labels[[index]]
         if len(wav) > INPUT_LENGTH:
             diff = len(wav) - INPUT_LENGTH
-            start = np.random.randint(diff)
+            if self.stable:
+                start = 0
+            else:
+                start = np.random.randint(diff)
             end = start + INPUT_LENGTH
             wav = wav[start: end]
         else:
             diff = INPUT_LENGTH - len(wav)
-            offset = np.random.randint(diff)
+            if self.stable:
+                offset = 0
+            else:
+                offset = np.random.randint(diff)
             offset_right = diff - offset
             wav = np.pad(wav, (offset, offset_right), "constant")
 
