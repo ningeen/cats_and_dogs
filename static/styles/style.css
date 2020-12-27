@@ -1,0 +1,126 @@
+a {
+  color: #337ab7;
+}
+p {
+  margin-top: 1rem;
+}
+a:hover {
+  color:#23527c;
+}
+a:visited {
+  color: #8d75a3;
+}
+
+body {
+	line-height: 1.5;
+	font-family: sans-serif;
+	word-wrap: break-word;
+	overflow-wrap: break-word;
+	color:black;
+	margin:2em;
+
+  margin-top: 5rem;
+  background: #fafafa;
+}
+
+
+h1, h2, h3, h4, h5, h6 {
+  color: #444444;
+}
+
+.content-section {
+  background: #ffffff;
+  padding: 10px 20px;
+  border: 1px solid #dddddd;
+  border-radius: 3px;
+  margin-bottom: 20px;
+}
+
+
+red {
+	color: red;
+}
+
+#controls {
+  display: flex;
+  margin-top: 2rem;
+  max-width: 28em;
+} 
+
+button {
+  border-radius: 12px;
+  background-color: #5f788a;
+  color: white;
+  padding: 12px 28px;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+  font-size: 16px;
+}
+
+button:hover, button:focus {
+  outline: none;
+  background: #c72d1c;
+}
+
+button:active {
+  box-shadow: 0 5px #666;
+  transform: translateY(4px);
+}
+
+
+button:disabled {
+  pointer-events: none;
+  background: lightgray;
+}
+
+button:first-child {
+  margin-left: 0;
+}
+
+audio {
+  display: block;
+  width: 100%;
+  margin-top: 0.2rem;
+}
+
+li {
+  margin-bottom: 1rem;
+}
+
+#formats {
+  margin-top: 0.5rem;
+  font-size: 80%;
+}
+
+#recordingsList{
+	max-width: 28em;
+}
+
+.bg-steel {
+  background-color: #5f788a;
+}
+
+.site-header .navbar-nav .nav-link {
+  color: #cbd5db;
+}
+
+.site-header .navbar-nav .nav-link:hover {
+  color: #ffffff;
+}
+
+.site-header .navbar-nav .nav-link.active {
+  font-weight: 500;
+}
+
+/*
+input[type="file"] {
+    display: none;
+}
+
+.custom-file-upload {
+    border: 1px solid #ccc;
+    display: inline-block;
+    padding: 6px 12px;
+    cursor: pointer;
+}*/

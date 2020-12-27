@@ -1,0 +1,54 @@
+{% extends "layout.html" %}
+{% block content %}
+
+  <h3>This site allows you to distinguish &#128568; and &#128054; by sound.</h3>
+  <p>Model was trained on <a href="https://www.kaggle.com/mmoreaux/audio-cats-and-dogs">Audio Cats and Dogs</a> kaggle dataset. </p>
+  <p>For testing you may use those samples: <a href="/static/cat_sample.wav">cat sample</a> and <a href="/static/dog_sample.wav">dog sample</a>.</p>
+  <hr>
+
+  <h3>Record your own audio...</h3>
+  <div id="controls">
+    <button id="recordButton">Record</button>
+    <button id="pauseButton" disabled>Pause</button>
+    <button id="stopButton" disabled>Stop</button>
+  </div>
+<!--   <div id="formats">Format: start recording to see sample rate</div> -->
+<!--   <p><strong>Recording:</strong></p> -->
+  <dl id="recordingsList"></dl>
+
+  <hr>
+  <h3>... or upload existing audio file (*.wav)</h3>
+  <input id="audio-file" type="file" accept=".wav" onchange="SaveAudio(this)" >
+
+  <br/>
+  <br/>
+  <form action="{{ url_for('predict_page') }}" method=post>
+    <button type="submit">Submit</button>
+  </form>
+
+  <!-- inserting these scripts at the end to be able to use all the elements in the DOM -->
+  <script src="https://cdn.rawgit.com/mattdiamond/Recorderjs/08e7abd9/dist/recorder.js"></script>
+  <script src="/static/js/app.js"></script>
+{% endblock content %}
+
+{% block content_section %}
+<div class="content-section">
+  <h3>How to use this site:</h3>
+  <h5>1.1. Record sound</h5>
+  <ol>
+    <li>Press "Record" button</li>
+    <li>Allow site to use micro</li>
+    <li>Record sound</li>
+    <li>Press "Pause" if you need to</li>
+    <li>Press "Stop" button when done</li>
+  </ol> 
+
+  <h5>1.2. Or upload existing *.wav file</h5>
+  <ol>
+    <li>Press "Browse" button</li>
+    <li>Choose existing file</li>
+  </ol> 
+
+  <h5>2. Press "Submit" button</h5>
+</div>
+{% endblock content_section %}

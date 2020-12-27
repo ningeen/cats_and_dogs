@@ -1,0 +1,32 @@
+version: 1
+formatters:
+    simple:
+        class: logging.Formatter
+        format: "%(asctime)s %(name)s %(levelname)s %(message)s"
+        datefmt: "%Y-%m-%d %H:%M:%S"
+handlers:
+    main_handler:
+        class: logging.FileHandler
+        filename: cats_and_dogs.log
+        level: DEBUG
+        formatter: simple
+    train_handler:
+        class: logging.FileHandler
+        filename: training.log
+        level: DEBUG
+        formatter: simple
+loggers:
+    cat_dogs_demo:
+        level: DEBUG
+        handlers: [main_handler]
+        propogate: no
+    classifier:
+        level: DEBUG
+        handlers: [main_handler]
+        propogate: no
+    training:
+        level: DEBUG
+        handlers: [train_handler]
+        propogate: no
+root:
+    level: DEBUG

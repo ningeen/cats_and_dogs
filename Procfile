@@ -1,0 +1,1 @@
+web: gunicorn cats_and_dogs/main:app
