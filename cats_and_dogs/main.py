@@ -4,8 +4,9 @@ import logging.config
 import yaml
 from flask import Flask, render_template, request
 
-from classifier import Classifier
+from cats_and_dogs.classifier import Classifier
 
+clf = Classifier()
 AUDIO_PATH = "static/audio.wav"
 app = Flask(
     __name__,
@@ -43,8 +44,3 @@ def predict_page():
         prediction_message=msg,
         prediction_image=img,
     )
-
-
-if __name__ == "__main__":
-    clf = Classifier()
-    app.run(debug=True)

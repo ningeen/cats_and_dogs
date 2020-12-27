@@ -3,8 +3,8 @@ import logging
 import numpy as np
 import torch
 
-from train_model import read_file, get_model, CatDogDataset
-from train_model import DEVICE, TRAINED_PATH
+from cats_and_dogs.train_model import read_file, get_model, CatDogDataset
+from cats_and_dogs.train_model import DEVICE, TRAINED_PATH
 
 APP_NAME = "classifier"
 logger = logging.getLogger(APP_NAME)
