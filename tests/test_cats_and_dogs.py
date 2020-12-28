@@ -12,8 +12,8 @@ import main
 import train_model as tm
 
 
-MEL_LENGTH = 188
-SAMPLE_SHAPE = (1, 1, 128, 188)
+MEL_LENGTH = 126
+SAMPLE_SHAPE = (1, 1, 128, MEL_LENGTH)
 SAMPLES_DIR = "static"
 CAT_SAMPLE_PATH = "static/cat_sample.wav"
 DOG_SAMPLE_PATH = "static/dog_sample.wav"
@@ -43,7 +43,7 @@ def clf():
 )
 def test_process_spectrogram(spec_length, clf):
     spec = np.random.normal(size=(SAMPLE_SHAPE[2]))
-    spec = clf.get_data(spec)
+    spec, _ = clf.get_data(spec)
     assert spec.shape[-1] == MEL_LENGTH, \
         "Wrong spectrogram length after preprocessing"
 

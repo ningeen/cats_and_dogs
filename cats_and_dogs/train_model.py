@@ -20,15 +20,15 @@ PRETRAINED_PATH = 'pretrained/mobilenetv3-small-55df8e1f.pth'
 TRAINED_PATH = 'pretrained/small_mobilenet_weights.pt'
 NUM_EPOCHS = 5
 SAMPLING_RATE = 16000
-SAMPLING_DURATION = 3
+SAMPLING_DURATION = 2
 SAVE_MODEL = True
 INPUT_LENGTH = SAMPLING_RATE * SAMPLING_DURATION
 LOADER_PARAMS = {'batch_size': 16, 'shuffle': True, 'num_workers': 4}
 
-DOG_TRAIN_PATH = "../cats_dogs/train/dog/"
-DOG_TEST_PATH = "../cats_dogs/test/test/"
-CAT_TRAIN_PATH = "../cats_dogs/train/cat/"
-CAT_TEST_PATH = "../cats_dogs/test/cats/"
+DOG_TRAIN_PATH = "input/train/dog/"
+DOG_TEST_PATH = "input/test/test/"
+CAT_TRAIN_PATH = "input/train/cat/"
+CAT_TEST_PATH = "input/test/cats/"
 
 APP_NAME = "training"
 DEFAULT_LOGGING_CONFIG_FILE_PATH = "logging.conf.yml"

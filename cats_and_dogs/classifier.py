@@ -4,7 +4,7 @@ import numpy as np
 import torch
 
 from cats_and_dogs.train_model import read_file, get_model, CatDogDataset
-from cats_and_dogs.train_model import DEVICE, TRAINED_PATH
+from cats_and_dogs.train_model import DEVICE, TRAINED_PATH, INPUT_LENGTH, LOADER_PARAMS
 
 APP_NAME = "classifier"
 logger = logging.getLogger(APP_NAME)
@@ -26,25 +26,53 @@ class Classifier:
         return model
 
     @staticmethod
-    def get_data(wav):
+    def get_batch(wav):
+        """Get batch data"""
+        chunks = list()
+        weights = list()
+        length = 0
+        for i in range(LOADER_PARAMS['batch_size']):
+            chunk = wav[length: length + INPUT_LENGTH]
+            weight = len(chunk) / INPUT_LENGTH
+            if weight > 0.25 or i == 0:
+                weights.append(weight)
+                chunks.append(chunk)
+                length += INPUT_LENGTH
+            else:
+                break
+        labels = np.array([None] * len(chunks), dtype=np.float32)
+        logger.debug("Got batch with length: %s.", len(chunks))
+        return chunks, labels, weights
+
+    @staticmethod
+    def get_spec(chunks, labels):
+        """Get batch mel spectrogram"""
+        dataset = CatDogDataset(chunks, labels, stable=True)
+        data = list()
+        for spec, _ in dataset:
+            data.append(spec)
+        data = np.array(data)
+        logger.debug("Spec shape: %s.", data.shape)
+        return data
+
+    def get_data(self, wav):
         """Get preprocessed Tensor"""
         logger.debug("Audio shape: %s.", wav.shape)
-        labels = np.array([None], dtype=np.float32)
-        dataset = CatDogDataset([wav], labels, stable=True)
-        data, _ = dataset[0]
-        logger.debug("Spec shape: %s.", data.shape)
-        data = data[np.newaxis, :, :, :]
+        chunks, labels, weights = self.get_batch(wav)
+        data = self.get_spec(chunks, labels)
         data = torch.tensor(data, dtype=torch.float32).to(DEVICE)
         logger.debug("Data shape: %s.", data.shape)
-        return data
+        return data, weights
 
     def predict(self, audio_path):
         """Predict class for wav-file saved in audio_path"""
         wav = read_file(audio_path)
-        data = self.get_data(wav)
+        data, weights = self.get_data(wav)
         out = self.model(data)
-        proba = torch.sigmoid(out.data).item()
-        return proba
+        logger.debug("Prediction shape: %s.", out.shape)
+        proba = torch.sigmoid(out.data).detach().cpu().numpy()
+        proba_mean = np.average(proba, axis=0, weights=weights).item()
+        return proba_mean
 
     def get_result_message(self, audio_path):
         """Return prediction message and class"""
