@@ -13,7 +13,7 @@ from sklearn.metrics import roc_auc_score, f1_score
 from torch import nn
 from torch.utils.data import Dataset, DataLoader
 
-from cats_and_dogs.mobilenetv3 import mobilenetv3_small
+from .mobilenetv3 import mobilenetv3_small
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 PRETRAINED_PATH = 'pretrained/mobilenetv3-small-55df8e1f.pth'
@@ -253,7 +253,3 @@ def main():
         train_model(model, criterion, optimizer, train_loader, test_loader)
     find_best_threshold(best_true, best_pred)
     logger.info("Training done.")
-
-
-if __name__ == "__main__":
-    main()

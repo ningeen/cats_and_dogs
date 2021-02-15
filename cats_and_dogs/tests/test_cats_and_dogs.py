@@ -1,15 +1,13 @@
 import logging
-import sys
 from unittest.mock import patch
 
 import numpy as np
 import pytest
 import torch
 
-sys.path.insert(0, './cats_and_dogs/')
-import classifier
-import main
-import train_model as tm
+from cats_and_dogs import classifier
+from cats_and_dogs import run_flask
+from cats_and_dogs import train_model as tm
 
 
 MEL_LENGTH = 126
@@ -64,7 +62,7 @@ def test_model_work_correct_on_samples(sample_path, label, clf, caplog):
 
 @pytest.fixture
 def app():
-    yield main.app
+    yield run_flask.app
 
 
 @pytest.fixture
@@ -81,7 +79,7 @@ def test_index_page(app, client):
     assert 'Submit' in page_text
 
 
-@patch('main.AUDIO_PATH', DOG_SAMPLE_PATH)
+@patch('cats_and_dogs.main.AUDIO_PATH', DOG_SAMPLE_PATH)
 def test_prediction_page(app, client, caplog):
     res = client.post('/prediction')
     page_text = res.data.decode()
@@ -120,8 +118,8 @@ def test_process_epoch(loader):
     assert np.all(np.isfinite(y_pred)), "Nan/inf in prediction"
 
 
-@patch('train_model.SAVE_MODEL', False)
-@patch('train_model.NUM_EPOCHS', 1)
+@patch('cats_and_dogs.train_model.SAVE_MODEL', False)
+@patch('cats_and_dogs.train_model.NUM_EPOCHS', 1)
 def test_train_model(loader):
     model = tm.get_model()
     criterion = torch.nn.BCEWithLogitsLoss()

@@ -6,8 +6,9 @@ import yaml
 import soundfile as sf
 from flask import Flask, render_template, request
 
-from cats_and_dogs.classifier import Classifier
-from cats_and_dogs.train_model import read_file, SAMPLING_RATE
+from .classifier import Classifier
+from .train_model import read_file, SAMPLING_RATE, \
+    DEFAULT_LOGGING_CONFIG_FILE_PATH
 
 AUDIO_PATH = "static/audio.wav"
 app = Flask(
@@ -17,7 +18,6 @@ app = Flask(
 )
 app.clf = Classifier()
 APP_NAME = "cat_dogs_demo"
-DEFAULT_LOGGING_CONFIG_FILE_PATH = "logging.conf.yml"
 logger = logging.getLogger(APP_NAME)
 with open(DEFAULT_LOGGING_CONFIG_FILE_PATH) as config_fin:
     logging.config.dictConfig(yaml.safe_load(config_fin))

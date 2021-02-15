@@ -4,8 +4,8 @@ import time
 import numpy as np
 import torch
 
-from cats_and_dogs.train_model import read_file, get_model, CatDogDataset
-from cats_and_dogs.train_model import DEVICE, TRAINED_PATH, INPUT_LENGTH, LOADER_PARAMS
+from .train_model import read_file, get_model, CatDogDataset
+from .train_model import DEVICE, TRAINED_PATH, INPUT_LENGTH, LOADER_PARAMS
 
 APP_NAME = "classifier"
 logger = logging.getLogger(APP_NAME)
