@@ -1,4 +1,5 @@
 import logging
+import time
 
 import numpy as np
 import torch
@@ -66,9 +67,19 @@ class Classifier:
 
     def predict(self, audio_path):
         """Predict class for wav-file saved in audio_path"""
+        start = time.time()
         wav = read_file(audio_path)
+        logger.debug("File read in %.3f s", time.time() - start)
+
+        start = time.time()
         data, weights = self.get_data(wav)
-        out = self.model(data)
+        logger.debug("Got spec data in %.3f s", time.time() - start)
+
+        start = time.time()
+        with torch.no_grad():
+            out = self.model(data)
+        logger.debug("Prediction done in %.3f s", time.time() - start)
+
         logger.debug("Prediction shape: %s.", out.shape)
         proba = torch.sigmoid(out.data).detach().cpu().numpy()
         proba_mean = np.average(proba, axis=0, weights=weights).item()
