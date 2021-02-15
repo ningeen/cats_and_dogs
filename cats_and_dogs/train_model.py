@@ -8,8 +8,7 @@ import yaml
 import librosa
 import numpy as np
 import torch
-from scipy.optimize import minimize
-from sklearn.metrics import roc_auc_score, f1_score
+from sklearn.metrics import roc_auc_score, balanced_accuracy_score
 from torch import nn
 from torch.utils.data import Dataset, DataLoader
 
@@ -17,8 +16,9 @@ from .mobilenetv3 import mobilenetv3_small
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 PRETRAINED_PATH = 'pretrained/mobilenetv3-small-55df8e1f.pth'
-TRAINED_PATH = 'pretrained/small_mobilenet_weights.pt'
-NUM_EPOCHS = 5
+TRAINED_PATH = 'pretrained/small_mobilenet_weights_3c.pt'
+NUM_EPOCHS = 10
+LR = 1e-3
 SAMPLING_RATE = 16000
 SAMPLING_DURATION = 2
 SAVE_MODEL = True
@@ -29,6 +29,8 @@ DOG_TRAIN_PATH = "input/train/dog/"
 DOG_TEST_PATH = "input/test/test/"
 CAT_TRAIN_PATH = "input/train/cat/"
 CAT_TEST_PATH = "input/test/cats/"
+OTHER_TRAIN_PATH = "input/16000/"
+OTHER_TEST_PATH = "input/16000_test/"
 
 APP_NAME = "training"
 DEFAULT_LOGGING_CONFIG_FILE_PATH = "logging.conf.yml"
@@ -98,7 +100,7 @@ class CatDogDataset(Dataset):
     def __getitem__(self, index):
         """Generates one sample of data"""
         wav = self.files[index]
-        label = self.labels[[index]]
+        label = self.labels[index]
         if len(wav) > INPUT_LENGTH:
             diff = len(wav) - INPUT_LENGTH
             if self.stable:
@@ -124,14 +126,19 @@ class CatDogDataset(Dataset):
         return mel, label
 
 
-def get_loader(dog_path, cat_path, params, transform=None):
+def get_loader(dog_path, cat_path, other_path, params, transform=None):
     """Parse files in directory and create loader"""
     logger.debug("Creating loader for %s and %s", dog_path, cat_path)
     dog_data = read_wav_files(dog_path)
     cat_data = read_wav_files(cat_path)
-    data = dog_data + cat_data
-    labels = [0] * len(dog_data) + [1] * len(cat_data)
-    labels = np.array(labels, dtype=np.float32)
+    other_data = read_wav_files(other_path)
+    data = dog_data + cat_data + other_data
+
+    labels = np.zeros((len(data), 3), dtype=np.float32)
+    labels[:len(dog_data), 0] = 1
+    labels[len(dog_data): len(dog_data) + len(cat_data), 1] = 1
+    labels[len(dog_data) + len(cat_data):, 2] = 1
+
     dataset = CatDogDataset(data, labels, transform=transform)
     dataloader = DataLoader(dataset, **params)
     return dataloader
@@ -150,14 +157,9 @@ def get_model(pretrained_mn3_path="", pretrained_path=""):
     )
     model.features[0][0].in_channels = 1
 
-    model.classifier[-1].weight.data = torch.sum(
-        model.classifier[-1].weight.data, dim=0, keepdim=True
-    )
-
-    model.classifier[-1].bias.data = torch.sum(
-        model.classifier[-1].bias.data, dim=0, keepdim=True
-    )
-    model.classifier[-1].out_features = 1
+    model.classifier[-1].weight.data = model.classifier[-1].weight.data[:3]
+    model.classifier[-1].bias.data = model.classifier[-1].bias.data[:3]
+    model.classifier[-1].out_features = 3
 
     if pretrained_path:
         model.load_state_dict(torch.load(pretrained_path))
@@ -177,9 +179,9 @@ def process_epoch(model, criterion, optimizer, loader):
 
             optimizer.zero_grad()
             outputs = model(local_batch)
-            probability = torch.sigmoid(outputs.data)
+            probability = torch.softmax(outputs.data, dim=1)
 
-            loss = criterion(outputs, local_labels)
+            loss = criterion(outputs, torch.argmax(local_labels, dim=1))
             if model.training:
                 loss.backward()
                 optimizer.step()
@@ -188,16 +190,16 @@ def process_epoch(model, criterion, optimizer, loader):
             y_true.append(local_labels.detach().cpu().numpy())
             y_pred.append(probability.detach().cpu().numpy())
     loss_train = np.array(losses).astype(np.float32).mean()
-    y_true = np.concatenate(y_true)
-    y_pred = np.concatenate(y_pred)
-    auc_train = roc_auc_score(y_true, y_pred)
+    y_true = np.concatenate(y_true, axis=0)
+    y_pred = np.concatenate(y_pred, axis=0)
+    auc_train = roc_auc_score(y_true, y_pred, multi_class='ovo')
     return loss_train, auc_train, y_true, y_pred
 
 
 def train_model(model, criterion, optimizer, train_loader, test_loader):
     """Training loop"""
     logger.info("Start training model")
-    logs = {'loss_train': [], 'loss_val': [], 'auc_train': [], 'auc_val': []}
+    logs = {'loss_train': [], 'loss_val': [], 'auc_train': [], 'auc_val': [], 'acc_val': []}
     best_true = None
     best_pred = None
     for epoch in range(NUM_EPOCHS):
@@ -213,15 +215,18 @@ def train_model(model, criterion, optimizer, train_loader, test_loader):
         model.eval()
         loss_val, auc_val, y_true, y_pred = \
             process_epoch(model, criterion, optimizer, test_loader)
+        acc_val = balanced_accuracy_score(np.argmax(y_true, axis=1), np.argmax(y_pred, axis=1))
         logs['loss_val'].append(loss_val)
         logs['auc_val'].append(auc_val)
+        logs['acc_val'].append(acc_val)
         logger.info(
             f"Epoch #{epoch + 1}. "
             f"Time: {(time.time() - start_time):.1f}s. "
-            f"Train loss: {loss_train:.3f}, train auc: {auc_train:.5f}. "
-            f"Val loss: {loss_val:.3f}, val auc: {auc_val:.5f}"
+            f"Train loss: {loss_train:.3f}, train auc: {auc_train:.3f}. "
+            f"Val loss: {loss_val:.3f}, val auc: {auc_val:.3f}. "
+            f"Acc: {acc_val:.3f}"
         )
-        if auc_val >= np.max(logs['auc_val']):
+        if acc_val >= np.max(logs['acc_val']):
             if SAVE_MODEL:
                 torch.save(model.state_dict(), TRAINED_PATH)
             best_true = y_true
@@ -229,27 +234,20 @@ def train_model(model, criterion, optimizer, train_loader, test_loader):
     return best_true, best_pred
 
 
-def find_best_threshold(best_true, best_pred):
-    """Calculate best threshold based on f1-score"""
-    calc_f1 = lambda x: -f1_score(best_true, best_pred > x[0])
-    res = minimize(calc_f1, np.array([0.5]), method='nelder-mead')
-    best_thr = res.x[0]
-    logger.info(f"Best thr: {best_thr}. F1-score: {-calc_f1(res.x):.5f}")
-
-
 def main():
     """Train and save model"""
     logger.info("Start training script")
     seed_everything()
 
-    train_loader = get_loader(DOG_TRAIN_PATH, CAT_TRAIN_PATH, LOADER_PARAMS)
-    test_loader = get_loader(DOG_TEST_PATH, CAT_TEST_PATH, LOADER_PARAMS)
+    train_loader = get_loader(DOG_TRAIN_PATH, CAT_TRAIN_PATH,
+                              OTHER_TRAIN_PATH, LOADER_PARAMS)
+    test_loader = get_loader(DOG_TEST_PATH, CAT_TEST_PATH,
+                             OTHER_TEST_PATH, LOADER_PARAMS)
 
     model = get_model(PRETRAINED_PATH)
-    criterion = nn.BCEWithLogitsLoss()
-    optimizer = torch.optim.Adam(model.parameters())
+    criterion = nn.CrossEntropyLoss()
+    optimizer = torch.optim.Adam(model.parameters(), lr=LR)
 
     best_true, best_pred = \
         train_model(model, criterion, optimizer, train_loader, test_loader)
-    find_best_threshold(best_true, best_pred)
     logger.info("Training done.")

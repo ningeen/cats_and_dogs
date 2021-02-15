@@ -5,6 +5,10 @@ formatters:
         format: "%(asctime)s %(name)s %(levelname)s %(message)s"
         datefmt: "%Y-%m-%d %H:%M:%S"
 handlers:
+    console_handler:
+        class: logging.StreamHandler
+        level: DEBUG
+        formatter: simple
     main_handler:
         class: logging.FileHandler
         filename: cats_and_dogs.log
@@ -18,15 +22,15 @@ handlers:
 loggers:
     cat_dogs_demo:
         level: DEBUG
-        handlers: [main_handler]
+        handlers: [main_handler, console_handler]
         propogate: no
     classifier:
         level: DEBUG
-        handlers: [main_handler]
+        handlers: [main_handler, console_handler]
         propogate: no
     training:
         level: DEBUG
-        handlers: [train_handler]
+        handlers: [train_handler, console_handler]
         propogate: no
 root:
     level: DEBUG

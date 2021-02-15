@@ -21,7 +21,7 @@ def test_classifier_load_model():
     clf = classifier.Classifier()
     out = clf.predict(CAT_SAMPLE_PATH)
     assert isinstance(clf.model, torch.nn.Module), "No pytorch model"
-    assert np.isfinite(out), f"Output is not a number: {out.item()}"
+    assert 3 == out.shape[0], f"Wrong output shape: {out.shape}"
 
 
 @pytest.fixture()
@@ -79,7 +79,7 @@ def test_index_page(app, client):
     assert 'Submit' in page_text
 
 
-@patch('cats_and_dogs.main.AUDIO_PATH', DOG_SAMPLE_PATH)
+@patch('cats_and_dogs.run_flask.AUDIO_PATH', DOG_SAMPLE_PATH)
 def test_prediction_page(app, client, caplog):
     res = client.post('/prediction')
     page_text = res.data.decode()
@@ -92,22 +92,25 @@ def test_prediction_page(app, client, caplog):
 
 @pytest.fixture
 def loader():
-    return tm.get_loader(SAMPLES_DIR, SAMPLES_DIR, tm.LOADER_PARAMS)
+    return tm.get_loader(SAMPLES_DIR, SAMPLES_DIR, SAMPLES_DIR, tm.LOADER_PARAMS)
 
 
 def test_loader(loader):
     for local_batch, local_labels in loader:
+        local_batch = local_batch.detach().cpu().numpy()
+        local_labels = local_labels.detach().cpu().numpy()
         break
     assert local_batch.shape[0] >= 4
     assert local_batch.shape[1:] == torch.Size(SAMPLE_SHAPE)[1:], \
         "Wrong sample shape"
-    assert all([label in [0, 1] for label in local_labels]), \
+    assert all(local_labels.max(axis=1) == 1) and \
+           all(local_labels.min(axis=1) == 0), \
         "Bad labels"
 
 
 def test_process_epoch(loader):
     model = tm.get_model()
-    criterion = torch.nn.BCEWithLogitsLoss()
+    criterion = torch.nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam(model.parameters())
     loss_train, auc_train, y_true, y_pred = \
         tm.process_epoch(model, criterion, optimizer, loader)
@@ -122,11 +125,10 @@ def test_process_epoch(loader):
 @patch('cats_and_dogs.train_model.NUM_EPOCHS', 1)
 def test_train_model(loader):
     model = tm.get_model()
-    criterion = torch.nn.BCEWithLogitsLoss()
+    criterion = torch.nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam(model.parameters())
     best_true, best_pred = tm.train_model(
         model, criterion, optimizer, loader, loader
     )
-    tm.find_best_threshold(best_true, best_pred)
     assert np.all(np.isfinite(best_pred)), \
         "Nan/inf in prediction"

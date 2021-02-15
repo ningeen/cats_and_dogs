@@ -17,7 +17,7 @@ class Classifier:
         """Initialize classifier"""
         self.device = DEVICE
         self.model = self.load_model()
-        self.labels = {0: 'dog', 1: 'cat'}
+        self.labels = {0: 'dog', 1: 'cat', 2: 'something_else'}
 
     def load_model(self):
         """Create model and load weights"""
@@ -81,21 +81,21 @@ class Classifier:
         logger.debug("Prediction done in %.3f s", time.time() - start)
 
         logger.debug("Prediction shape: %s.", out.shape)
-        proba = torch.sigmoid(out.data).detach().cpu().numpy()
-        proba_mean = np.average(proba, axis=0, weights=weights).item()
+        proba = torch.softmax(out.data, dim=1).detach().cpu().numpy()
+        proba_mean = np.average(proba, axis=0, weights=weights)
         return proba_mean
 
     def get_result_message(self, audio_path):
         """Return prediction message and class"""
         try:
             proba = self.predict(audio_path)
-            label = int(np.round(proba))
-            logger.info("Class probability: %5f.", proba)
+            label = np.argmax(proba)
+            logger.info("Class probabilities: %s", proba)
 
             predicted_class = self.labels[label]
-            predicted_proba = proba if label else 1 - proba
+            predicted_proba = proba[label]
             msg = f"I'm {predicted_proba:.1%} sure it is a {predicted_class}."
-            return msg, predicted_class
+            return msg.replace('_', ' '), predicted_class
         except Exception as error:
             logger.error("Prediction error: %s", error)
             return "Got some error, please try again.", "unknown"
