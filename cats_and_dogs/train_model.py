@@ -15,28 +15,16 @@ from torch.utils.data import Dataset, DataLoader
 from .mobilenetv3 import mobilenetv3_small
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-PRETRAINED_PATH = 'pretrained/mobilenetv3-small-55df8e1f.pth'
-TRAINED_PATH = 'pretrained/small_mobilenet_weights.pt'
-NUM_EPOCHS = 10
-LR = 1e-3
-SAMPLING_RATE = 16000
-SAMPLING_DURATION = 2
-SAVE_MODEL = True
-INPUT_LENGTH = SAMPLING_RATE * SAMPLING_DURATION
-LOADER_PARAMS = {'batch_size': 16, 'shuffle': True, 'num_workers': 4}
-
-DOG_TRAIN_PATH = "input/train/dog/"
-DOG_TEST_PATH = "input/test/test/"
-CAT_TRAIN_PATH = "input/train/cat/"
-CAT_TEST_PATH = "input/test/cats/"
-OTHER_TRAIN_PATH = "input/16000/"
-OTHER_TEST_PATH = "input/16000_test/"
 
 APP_NAME = "training"
-DEFAULT_LOGGING_CONFIG_FILE_PATH = "logging.conf.yml"
+DEFAULT_LOGGING_CONFIG_FILE_PATH = "config/logging.conf.yml"
 logger = logging.getLogger(APP_NAME)
 with open(DEFAULT_LOGGING_CONFIG_FILE_PATH) as config_fin:
     logging.config.dictConfig(yaml.safe_load(config_fin))
+
+DEFAULT_MODEL_CONFIG_FILE_PATH = "config/model_config.yml"
+with open(DEFAULT_MODEL_CONFIG_FILE_PATH) as config_fin:
+    config = yaml.safe_load(config_fin)
 
 
 def seed_everything(seed=1234):
@@ -52,7 +40,7 @@ def seed_everything(seed=1234):
 
 def read_file(path):
     """Read wav file"""
-    wav, _ = librosa.core.load(path, sr=SAMPLING_RATE)
+    wav, _ = librosa.core.load(path, sr=config['sampling_rate'])
     wav, _ = librosa.effects.trim(wav)
     return wav
 
@@ -73,7 +61,7 @@ def get_mel(wav):
     """Calculate melspectrogram"""
     melspec = librosa.feature.melspectrogram(
         wav,
-        sr=SAMPLING_RATE,
+        sr=config['sampling_rate'],
         n_fft=1024,
         hop_length=256,
         n_mels=128
@@ -101,16 +89,16 @@ class CatDogDataset(Dataset):
         """Generates one sample of data"""
         wav = self.files[index]
         label = self.labels[index]
-        if len(wav) > INPUT_LENGTH:
-            diff = len(wav) - INPUT_LENGTH
+        if len(wav) > config['input_length']:
+            diff = len(wav) - config['input_length']
             if self.stable:
                 start = 0
             else:
                 start = np.random.randint(diff)
-            end = start + INPUT_LENGTH
+            end = start + config['input_length']
             wav = wav[start: end]
         else:
-            diff = INPUT_LENGTH - len(wav)
+            diff = config['input_length'] - len(wav)
             if self.stable:
                 offset = 0
             else:
@@ -199,10 +187,11 @@ def process_epoch(model, criterion, optimizer, loader):
 def train_model(model, criterion, optimizer, train_loader, test_loader):
     """Training loop"""
     logger.info("Start training model")
-    logs = {'loss_train': [], 'loss_val': [], 'auc_train': [], 'auc_val': [], 'acc_val': []}
+    logs = {'loss_train': [], 'loss_val': [],
+            'auc_train': [], 'auc_val': [], 'acc_val': []}
     best_true = None
     best_pred = None
-    for epoch in range(NUM_EPOCHS):
+    for epoch in range(config['num_epochs']):
         start_time = time.time()
         # Training
         model.train()
@@ -215,7 +204,8 @@ def train_model(model, criterion, optimizer, train_loader, test_loader):
         model.eval()
         loss_val, auc_val, y_true, y_pred = \
             process_epoch(model, criterion, optimizer, test_loader)
-        acc_val = balanced_accuracy_score(np.argmax(y_true, axis=1), np.argmax(y_pred, axis=1))
+        acc_val = balanced_accuracy_score(np.argmax(y_true, axis=1),
+                                          np.argmax(y_pred, axis=1))
         logs['loss_val'].append(loss_val)
         logs['auc_val'].append(auc_val)
         logs['acc_val'].append(acc_val)
@@ -227,8 +217,8 @@ def train_model(model, criterion, optimizer, train_loader, test_loader):
             f"Acc: {acc_val:.3f}"
         )
         if acc_val >= np.max(logs['acc_val']):
-            if SAVE_MODEL:
-                torch.save(model.state_dict(), TRAINED_PATH)
+            if config['save_model']:
+                torch.save(model.state_dict(), config['trained_path'])
             best_true = y_true
             best_pred = y_pred
     return best_true, best_pred
@@ -239,14 +229,18 @@ def main():
     logger.info("Start training script")
     seed_everything()
 
-    train_loader = get_loader(DOG_TRAIN_PATH, CAT_TRAIN_PATH,
-                              OTHER_TRAIN_PATH, LOADER_PARAMS)
-    test_loader = get_loader(DOG_TEST_PATH, CAT_TEST_PATH,
-                             OTHER_TEST_PATH, LOADER_PARAMS)
+    train_loader = get_loader(
+        config['dog_train_path'], config['cat_train_path'],
+        config['other_train_path'], config['loader_params']
+    )
+    test_loader = get_loader(
+        config['dog_test_path'], config['cat_test_path'],
+        config['other_test_path'], config['loader_params']
+    )
 
-    model = get_model(PRETRAINED_PATH)
+    model = get_model(config['pretrained_path'])
     criterion = nn.CrossEntropyLoss()
-    optimizer = torch.optim.Adam(model.parameters(), lr=LR)
+    optimizer = torch.optim.Adam(model.parameters(), lr=config['lr'])
 
     best_true, best_pred = \
         train_model(model, criterion, optimizer, train_loader, test_loader)

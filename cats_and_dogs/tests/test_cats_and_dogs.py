@@ -33,10 +33,10 @@ def clf():
     "spec_length",
     [
         pytest.param(1, id='one_lengths'),
-        pytest.param(tm.INPUT_LENGTH - 1, id='small_lengths'),
-        pytest.param(tm.INPUT_LENGTH + 1, id='more_lengths'),
-        pytest.param(tm.INPUT_LENGTH * 100, id='big_lengths'),
-        pytest.param(tm.INPUT_LENGTH, id='equal_lengths'),
+        pytest.param(tm.config['input_length'] - 1, id='small_lengths'),
+        pytest.param(tm.config['input_length'] + 1, id='more_lengths'),
+        pytest.param(tm.config['input_length'] * 100, id='big_lengths'),
+        pytest.param(tm.config['input_length'], id='equal_lengths'),
     ]
 )
 def test_process_spectrogram(spec_length, clf):
@@ -92,7 +92,8 @@ def test_prediction_page(app, client, caplog):
 
 @pytest.fixture
 def loader():
-    return tm.get_loader(SAMPLES_DIR, SAMPLES_DIR, SAMPLES_DIR, tm.LOADER_PARAMS)
+    return tm.get_loader(SAMPLES_DIR, SAMPLES_DIR, SAMPLES_DIR,
+                         tm.config['loader_params'])
 
 
 def test_loader(loader):
@@ -121,8 +122,7 @@ def test_process_epoch(loader):
     assert np.all(np.isfinite(y_pred)), "Nan/inf in prediction"
 
 
-@patch('cats_and_dogs.train_model.SAVE_MODEL', False)
-@patch('cats_and_dogs.train_model.NUM_EPOCHS', 1)
+@patch('cats_and_dogs.train_model.config', {'save_model': False, 'num_epochs': 1})
 def test_train_model(loader):
     model = tm.get_model()
     criterion = torch.nn.CrossEntropyLoss()

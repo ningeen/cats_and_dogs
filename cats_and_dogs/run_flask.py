@@ -7,8 +7,7 @@ import soundfile as sf
 from flask import Flask, render_template, request
 
 from .classifier import Classifier
-from .train_model import read_file, SAMPLING_RATE, \
-    DEFAULT_LOGGING_CONFIG_FILE_PATH
+from .train_model import read_file, config, DEFAULT_LOGGING_CONFIG_FILE_PATH
 
 AUDIO_PATH = "static/audio.wav"
 app = Flask(
@@ -21,6 +20,7 @@ APP_NAME = "cat_dogs_demo"
 logger = logging.getLogger(APP_NAME)
 with open(DEFAULT_LOGGING_CONFIG_FILE_PATH) as config_fin:
     logging.config.dictConfig(yaml.safe_load(config_fin))
+SAMPLING_RATE = config['sampling_rate']
 
 
 @app.route("/", methods=["POST", "GET"])

@@ -1,0 +1,16 @@
+pretrained_path: 'pretrained/mobilenetv3-small-55df8e1f.pth'
+trained_path: 'pretrained/small_mobilenet_weights.pt'
+num_epochs: 10
+lr: 0.001
+sampling_rate: 16000
+sampling_duration: 2
+save_model: True
+input_length: 32000
+loader_params: {'batch_size': 16, 'shuffle': True, 'num_workers': 4}
+
+dog_train_path: "input/train/dog/"
+dog_test_path: "input/test/test/"
+cat_train_path: "input/train/cat/"
+cat_test_path: "input/test/cats/"
+other_train_path: "input/16000/"
+other_test_path: "input/16000_test/"

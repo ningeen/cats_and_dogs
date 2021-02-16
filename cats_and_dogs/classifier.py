@@ -5,10 +5,13 @@ import numpy as np
 import torch
 
 from .train_model import read_file, get_model, CatDogDataset
-from .train_model import DEVICE, TRAINED_PATH, INPUT_LENGTH, LOADER_PARAMS
+from .train_model import DEVICE, config
 
 APP_NAME = "classifier"
 logger = logging.getLogger(APP_NAME)
+TRAINED_PATH = config['trained_path']
+INPUT_LENGTH = config['input_length']
+LOADER_PARAMS = config['loader_params']
 
 
 class Classifier:
