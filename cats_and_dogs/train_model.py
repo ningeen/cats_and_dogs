@@ -16,7 +16,7 @@ from .mobilenetv3 import mobilenetv3_small
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 PRETRAINED_PATH = 'pretrained/mobilenetv3-small-55df8e1f.pth'
-TRAINED_PATH = 'pretrained/small_mobilenet_weights_3c.pt'
+TRAINED_PATH = 'pretrained/small_mobilenet_weights.pt'
 NUM_EPOCHS = 10
 LR = 1e-3
 SAMPLING_RATE = 16000
